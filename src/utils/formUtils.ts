@@ -18,8 +18,6 @@ export type ProcessedFormData = Record<string, SimpleFormValue | NestedObject | 
  */
 export function processFormData(formData: FormData): ProcessedFormData {
   const result: ProcessedFormData = {}
-
-  // First, collect all form entries and organize them by their naming pattern
   const entries = Array.from(formData.entries())
 
   // Process simple fields (no brackets)
@@ -30,194 +28,145 @@ export function processFormData(formData: FormData): ProcessedFormData {
   })
 
   // Process nested fields with pattern: name[key1][key2]...[keyN]
-  const nestedFields = entries.filter(([key]) => typeof key === 'string' && key.includes('[') && key.includes(']'))
+  const nestedEntries = entries.filter(([key]) => typeof key === 'string' && key.includes('[') && key.includes(']'))
 
-  // Group by the base name (before first bracket)
+  // Group by base name
   const fieldGroups: Record<string, Array<{ path: string[]; value: FormDataEntryValue }>> = {}
 
-  nestedFields.forEach(([key, value]) => {
+  nestedEntries.forEach(([key, value]) => {
     if (typeof key !== 'string') return
 
-    // Extract the base name and the path parts
+    // Extract base name and parse path parts using regex
     const baseName = key.substring(0, key.indexOf('['))
-    const pathStr = key.substring(key.indexOf('['))
+    const pathParts = [...key.matchAll(/\[([^\]]*)\]/g)].map(match => match[1])
 
-    // Parse the path into parts
-    const pathParts: string[] = []
-    let currentPart = ''
-    let inBracket = false
-
-    for (let i = 0; i < pathStr.length; i++) {
-      const char = pathStr[i]
-
-      if (char === '[') {
-        inBracket = true
-        continue
-      }
-
-      if (char === ']') {
-        inBracket = false
-        pathParts.push(currentPart)
-        currentPart = ''
-        continue
-      }
-
-      if (inBracket) {
-        currentPart += char
-      }
-    }
-
-    // Add to the field groups
     if (!fieldGroups[baseName]) {
       fieldGroups[baseName] = []
     }
 
     fieldGroups[baseName].push({
       path: pathParts,
-      value: value,
+      value,
     })
   })
 
-  // Post-process function to convert numeric object keys to array items
-  const processNestedArrays = (
+  // Helper function to set a value at a nested path
+  const setNestedValue = (obj: NestedObject, path: string[], value: FormDataEntryValue): void => {
+    if (path.length === 0) return
+
+    let current = obj
+    const lastIndex = path.length - 1
+
+    for (let i = 0; i < lastIndex; i++) {
+      const key = path[i]
+      const nextKey = path[i + 1]
+      const isNextKeyNumeric = !isNaN(parseInt(nextKey))
+
+      // If key doesn't exist or is not an object, initialize it
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = isNextKeyNumeric ? ({} as NestedObject) : ({} as NestedObject)
+      }
+      // If next key is numeric but current key is not an array, prepare it for potential array conversion
+      else if (isNextKeyNumeric && !Array.isArray(current[key])) {
+        // Keep it as an object - arrays will be converted during normalization phase
+        const tempObj = current[key] as NestedObject
+        // We leave it as an object because TypeScript has issues with the dynamic conversion
+        current[key] = tempObj
+      }
+
+      current = current[key] as NestedObject
+    }
+
+    // Set the final value
+    const finalKey = path[lastIndex]
+
+    // Only set non-empty string values
+    if (typeof value !== 'string' || value.trim() !== '') {
+      current[finalKey] = value as SimpleFormValue
+    }
+  }
+
+  // Helper function to convert objects with numeric keys to arrays
+  const normalizeStructure = (
     item: unknown
   ): SimpleFormValue | NestedObject | Array<SimpleFormValue | NestedObject> => {
+    // Handle primitive values
     if (item === null || typeof item !== 'object') {
       return item as SimpleFormValue
     }
 
-    // Check if this object should be an array
-    const itemObj = item as Record<string, unknown>
-    const keys = Object.keys(itemObj)
+    // Handle arrays
+    if (Array.isArray(item)) {
+      return item.map(val => normalizeStructure(val)).filter(Boolean) as Array<SimpleFormValue | NestedObject>
+    }
+
+    // Check if object should be an array (all keys are numeric)
+    const obj = item as Record<string, unknown>
+    const keys = Object.keys(obj)
     const allNumericKeys = keys.length > 0 && keys.every(key => !isNaN(parseInt(key)))
 
     if (allNumericKeys) {
       // Convert to array
-      const result: Array<SimpleFormValue | NestedObject> = []
+      const array: Array<SimpleFormValue | NestedObject> = []
       keys
         .sort((a, b) => parseInt(a) - parseInt(b))
         .forEach(key => {
-          result[parseInt(key)] = processNestedArrays(itemObj[key]) as SimpleFormValue | NestedObject
+          array[parseInt(key)] = normalizeStructure(obj[key]) as SimpleFormValue | NestedObject
         })
-      return result.filter(Boolean) // Remove empty slots
-    } else if (Array.isArray(item)) {
-      return item.map(val => processNestedArrays(val)).filter(Boolean) as Array<SimpleFormValue | NestedObject>
-    } else {
-      // Process each property
-      const result: NestedObject = {}
-      Object.entries(itemObj).forEach(([key, value]) => {
-        result[key] = processNestedArrays(value)
-      })
-      return result
+      return array.filter(val => val !== undefined) as Array<SimpleFormValue | NestedObject>
     }
+
+    // Process regular object
+    const resultObj: NestedObject = {}
+    Object.entries(obj).forEach(([key, value]) => {
+      const normalized = normalizeStructure(value)
+      if (normalized !== undefined) {
+        resultObj[key] = normalized as SimpleFormValue | NestedObject | Array<SimpleFormValue | NestedObject>
+      }
+    })
+    return resultObj
   }
 
   // Process each field group
   Object.entries(fieldGroups).forEach(([groupName, fields]) => {
-    // Determine if this is an array or object structure
+    // Check if top level is an array
     const isArrayStructure = fields.every(field => field.path.length > 0 && !isNaN(parseInt(field.path[0])))
 
     if (isArrayStructure) {
-      // Handle array structure (e.g., items[0], items[1], etc.)
-      const array: Array<SimpleFormValue | NestedObject> = []
+      // Array structure (e.g., items[0], items[1])
+      const tempObj: NestedObject = {}
 
       fields.forEach(field => {
-        const index = parseInt(field.path[0])
-
-        // Simple array (e.g., items[0], items[1])
-        if (field.path.length === 1) {
-          if (typeof field.value === 'string' && field.value.trim() !== '') {
-            array[index] = field.value
-          }
-        }
-        // Array of objects (e.g., profile[0][name], profile[0][email])
-        else if (field.path.length > 1) {
-          if (!array[index] || typeof array[index] !== 'object') {
-            array[index] = {} as NestedObject
-          }
-
-          // Handle nested properties
-          let current = array[index] as NestedObject
-
-          for (let i = 1; i < field.path.length - 1; i++) {
-            const part = field.path[i]
-
-            // Check if this part should be an array
-            const isNestedArray = fields.some(otherField => {
-              // Check if other fields have the same path prefix and numeric indices
-              if (otherField !== field) {
-                const otherPathPrefix = [groupName, ...otherField.path.slice(0, i + 1)].join('][')
-                const currentPathPrefix = [groupName, ...field.path.slice(0, i + 1)].join('][')
-                return otherPathPrefix === currentPathPrefix && !isNaN(parseInt(otherField.path[i + 1]))
-              }
-              return false
-            })
-
-            if (!current[part]) {
-              current[part] = isNestedArray ? [] : ({} as NestedObject)
-            } else if (isNestedArray && !Array.isArray(current[part])) {
-              // Convert to array if needed
-              const tempObj = current[part] as NestedObject
-              const tempArray: Array<SimpleFormValue | NestedObject> = []
-
-              // Move existing properties to array
-              Object.entries(tempObj).forEach(([key, value]) => {
-                if (!isNaN(parseInt(key))) {
-                  tempArray[parseInt(key)] = value as SimpleFormValue | NestedObject
-                }
-              })
-
-              current[part] = tempArray
-            }
-
-            current = current[part] as NestedObject
-          }
-
-          // Set the value at the final path
-          const finalKey = field.path[field.path.length - 1]
-          current[finalKey] = field.value as SimpleFormValue
-        }
+        // For all field paths, store them in temporary object that will be normalized later
+        setNestedValue(tempObj, field.path, field.value)
       })
 
-      // Process the array to convert nested objects with numeric keys to arrays
-      for (let i = 0; i < array.length; i++) {
-        if (array[i] && typeof array[i] === 'object') {
-          array[i] = processNestedArrays(array[i]) as SimpleFormValue | NestedObject
-        }
+      // Convert the temporary object to proper arrays where needed
+      const normalized = normalizeStructure(tempObj)
+
+      // Filter empty objects from the array
+      if (Array.isArray(normalized)) {
+        result[groupName] = normalized.filter(item => {
+          if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+            // Keep objects that have at least one non-empty value
+            return Object.values(item as object).some(
+              val => val !== null && ((typeof val === 'string' && val.trim() !== '') || typeof val !== 'string')
+            )
+          }
+          return item !== undefined
+        })
+      } else {
+        result[groupName] = normalized
       }
-
-      // Filter out empty slots and objects
-      result[groupName] = array.filter(item => {
-        if (typeof item === 'object' && item !== null) {
-          return Object.values(item as object).some(
-            val => val !== null && ((typeof val === 'string' && val.trim() !== '') || typeof val !== 'string')
-          )
-        }
-        return item !== undefined
-      })
     } else {
-      // Handle object structure (e.g., user[name], user[email])
+      // Object structure (e.g., user[name], user[email])
       const obj: NestedObject = {}
 
       fields.forEach(field => {
-        let current = obj
-
-        // Navigate to the nested property
-        for (let i = 0; i < field.path.length - 1; i++) {
-          const part = field.path[i]
-          if (!current[part] || typeof current[part] !== 'object') {
-            current[part] = {} as NestedObject
-          }
-          current = current[part] as NestedObject
-        }
-
-        // Set the value at the final path
-        const finalKey = field.path[field.path.length - 1]
-        current[finalKey] = field.value as SimpleFormValue
+        setNestedValue(obj, field.path, field.value)
       })
 
-      // Process the object to convert nested objects with numeric keys to arrays
-      result[groupName] = processNestedArrays(obj)
+      result[groupName] = normalizeStructure(obj)
     }
   })
 
