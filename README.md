@@ -1,54 +1,127 @@
-# React + TypeScript + Vite
+# Form Data Parser
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React application that demonstrates advanced form data processing with support for complex nested structures. This utility can parse form data with deeply nested fields, arrays, and objects using a consistent naming convention.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Process form data with complex nested structures
+- Support for arrays, objects, and mixed data types
+- Automatic conversion of numeric indices to arrays
+- Filtering of empty values and objects
+- TypeScript type safety
+- Comprehensive test coverage
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Clone the repository and install dependencies:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+git clone https://github.com/yourusername/form-data-parser.git
+cd form-data-parser
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Usage
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Running the Development Server
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+Start the development server:
+
+```bash
+npm run dev
 ```
+
+This will start the Vite development server, typically at http://localhost:5173.
+
+### Building for Production
+
+Build the application for production:
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist` directory.
+
+### Preview Production Build
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+## Form Data Processing
+
+The core functionality is in the `processFormData` utility, which converts form data with nested field names into structured JavaScript objects.
+
+### Supported Field Naming Patterns
+
+- Simple fields: `name`, `email`
+- Arrays: `items[0]`, `items[1]`
+- Objects: `user[name]`, `user[email]`
+- Nested objects: `user[address][street]`, `user[address][city]`
+- Arrays of objects: `profiles[0][name]`, `profiles[0][email]`
+- Deeply nested structures: `data[0][items][0][name]`
+
+### Example
+
+HTML Form:
+
+```html
+<form>
+  <input name="profile[0][name]" value="John Doe" />
+  <input name="profile[0][email]" value="john@example.com" />
+  <input name="profile[0][tags][0]" value="developer" />
+  <input name="profile[0][tags][1]" value="javascript" />
+  <input name="profile[1][name]" value="Jane Smith" />
+  <input name="profile[1][email]" value="jane@example.com" />
+</form>
+```
+
+JavaScript:
+
+```javascript
+const formData = new FormData(formElement)
+const result = processFormData(formData)
+
+// Result:
+// {
+//   profile: [
+//     {
+//       name: "John Doe",
+//       email: "john@example.com",
+//       tags: ["developer", "javascript"]
+//     },
+//     {
+//       name: "Jane Smith",
+//       email: "jane@example.com"
+//     }
+//   ]
+// }
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+## Technology Stack
+
+- React 19
+- TypeScript
+- Vite
+- Vitest for testing
+
+## License
+
+MIT

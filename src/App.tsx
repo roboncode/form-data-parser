@@ -31,7 +31,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Form Builder</h1>
+      <h1>Form Data Parser</h1>
 
       <div className="form-container">
         <form id="profilesForm" onSubmit={handleSubmit}>
