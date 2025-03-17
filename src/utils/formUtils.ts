@@ -12,13 +12,22 @@ export interface NestedObject {
 export type ProcessedFormData = Record<string, SimpleFormValue | NestedObject | Array<SimpleFormValue | NestedObject>>
 
 /**
- * Generic function to convert any form data into a structured object
- * @param formData - The FormData object from a form submission
+ * Generic function to convert form data into a structured object
+ * @param data - The data to process, either FormData or a Record object
  * @returns Structured form data object
  */
-export function processFormData(formData: FormData): ProcessedFormData {
+export function processFormData(data: FormData | Record<string, unknown>): ProcessedFormData {
   const result: ProcessedFormData = {}
-  const entries = Array.from(formData.entries())
+  let entries: Array<[string, unknown]> = []
+
+  // Handle different input types
+  if (data instanceof FormData) {
+    // Process FormData object
+    entries = Array.from(data.entries()) as Array<[string, unknown]>
+  } else {
+    // Process plain object (JSON)
+    entries = Object.entries(data)
+  }
 
   // Process simple fields (no brackets)
   entries.forEach(([key, value]) => {
@@ -31,7 +40,7 @@ export function processFormData(formData: FormData): ProcessedFormData {
   const nestedEntries = entries.filter(([key]) => typeof key === 'string' && key.includes('[') && key.includes(']'))
 
   // Group by base name
-  const fieldGroups: Record<string, Array<{ path: string[]; value: FormDataEntryValue }>> = {}
+  const fieldGroups: Record<string, Array<{ path: string[]; value: unknown }>> = {}
 
   nestedEntries.forEach(([key, value]) => {
     if (typeof key !== 'string') return
@@ -51,7 +60,7 @@ export function processFormData(formData: FormData): ProcessedFormData {
   })
 
   // Helper function to set a value at a nested path
-  const setNestedValue = (obj: NestedObject, path: string[], value: FormDataEntryValue): void => {
+  const setNestedValue = (obj: NestedObject, path: string[], value: unknown): void => {
     if (path.length === 0) return
 
     let current = obj
