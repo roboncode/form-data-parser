@@ -29,15 +29,15 @@ export function processFormData(data: FormData | Record<string, unknown>): Proce
     entries = Object.entries(data)
   }
 
-  // Process simple fields (no brackets)
+  // Process simple fields (no dots or brackets)
   entries.forEach(([key, value]) => {
-    if (typeof key === 'string' && !key.includes('[')) {
+    if (typeof key === 'string' && !key.includes('.') && !key.includes('[')) {
       result[key] = value as SimpleFormValue
     }
   })
 
-  // Process nested fields with pattern: name[key1][key2]...[keyN]
-  const nestedEntries = entries.filter(([key]) => typeof key === 'string' && key.includes('[') && key.includes(']'))
+  // Process nested fields with pattern: name[0].field or name.field
+  const nestedEntries = entries.filter(([key]) => typeof key === 'string' && (key.includes('.') || key.includes('[')))
 
   // Group by base name
   const fieldGroups: Record<string, Array<{ path: string[]; value: unknown }>> = {}
@@ -45,16 +45,16 @@ export function processFormData(data: FormData | Record<string, unknown>): Proce
   nestedEntries.forEach(([key, value]) => {
     if (typeof key !== 'string') return
 
-    // Extract base name and parse path parts using regex
-    const baseName = key.substring(0, key.indexOf('['))
-    const pathParts = [...key.matchAll(/\[([^\]]*)\]/g)].map(match => match[1])
+    // Split the key into parts, handling both dot and bracket notation
+    const parts = key.split(/[.[\]]/).filter(Boolean)
+    const baseName = parts[0]
 
     if (!fieldGroups[baseName]) {
       fieldGroups[baseName] = []
     }
 
     fieldGroups[baseName].push({
-      path: pathParts,
+      path: parts.slice(1),
       value,
     })
   })
@@ -73,14 +73,12 @@ export function processFormData(data: FormData | Record<string, unknown>): Proce
 
       // If key doesn't exist or is not an object, initialize it
       if (!current[key] || typeof current[key] !== 'object') {
-        current[key] = isNextKeyNumeric ? ({} as NestedObject) : ({} as NestedObject)
+        current[key] = isNextKeyNumeric ? [] : ({} as NestedObject)
       }
-      // If next key is numeric but current key is not an array, prepare it for potential array conversion
+      // If next key is numeric but current key is not an array, convert it
       else if (isNextKeyNumeric && !Array.isArray(current[key])) {
-        // Keep it as an object - arrays will be converted during normalization phase
         const tempObj = current[key] as NestedObject
-        // We leave it as an object because TypeScript has issues with the dynamic conversion
-        current[key] = tempObj
+        current[key] = Object.keys(tempObj).map(k => tempObj[k]) as Array<SimpleFormValue | NestedObject>
       }
 
       current = current[key] as NestedObject
@@ -146,7 +144,6 @@ export function processFormData(data: FormData | Record<string, unknown>): Proce
       const tempObj: NestedObject = {}
 
       fields.forEach(field => {
-        // For all field paths, store them in temporary object that will be normalized later
         setNestedValue(tempObj, field.path, field.value)
       })
 
@@ -168,7 +165,7 @@ export function processFormData(data: FormData | Record<string, unknown>): Proce
         result[groupName] = normalized
       }
     } else {
-      // Object structure (e.g., user[name], user[email])
+      // Object structure (e.g., user.name, user.email)
       const obj: NestedObject = {}
 
       fields.forEach(field => {

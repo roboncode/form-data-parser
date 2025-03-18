@@ -74,10 +74,10 @@ describe('processFormData', () => {
 
   it('should process arrays of objects correctly', () => {
     const formData = createFormData({
-      'profile[0][name]': 'John Doe',
-      'profile[0][email]': 'john@example.com',
-      'profile[1][name]': 'Jane Smith',
-      'profile[1][email]': 'jane@example.com',
+      'profile[0].name': 'John Doe',
+      'profile[0].email': 'john@example.com',
+      'profile[1].name': 'Jane Smith',
+      'profile[1].email': 'jane@example.com',
     })
 
     const result = processFormData(formData)
@@ -92,12 +92,12 @@ describe('processFormData', () => {
 
   it('should filter out empty objects in arrays', () => {
     const formData = createFormData({
-      'profile[0][name]': 'John Doe',
-      'profile[0][email]': 'john@example.com',
-      'profile[1][name]': '',
-      'profile[1][email]': '',
-      'profile[2][name]': 'Jane Smith',
-      'profile[2][email]': 'jane@example.com',
+      'profile[0].name': 'John Doe',
+      'profile[0].email': 'john@example.com',
+      'profile[1].name': '',
+      'profile[1].email': '',
+      'profile[2].name': 'Jane Smith',
+      'profile[2].email': 'jane@example.com',
     })
 
     const result = processFormData(formData)
@@ -112,12 +112,12 @@ describe('processFormData', () => {
 
   it('should process nested objects correctly', () => {
     const formData = createFormData({
-      'user[name]': 'John Doe',
-      'user[contact][email]': 'john@example.com',
-      'user[contact][phone]': '123-456-7890',
-      'user[address][street]': '123 Main St',
-      'user[address][city]': 'Anytown',
-      'user[address][zip]': '12345',
+      'user.name': 'John Doe',
+      'user.contact.email': 'john@example.com',
+      'user.contact.phone': '123-456-7890',
+      'user.address.street': '123 Main St',
+      'user.address.city': 'Anytown',
+      'user.address.zip': '12345',
     })
 
     const result = processFormData(formData)
@@ -141,14 +141,14 @@ describe('processFormData', () => {
   it('should handle complex mixed structures', () => {
     const formData = createFormData({
       contactMethod: 'email',
-      'profile[0][name]': 'John Doe',
-      'profile[0][email]': 'john@example.com',
-      'profile[1][name]': 'Jane Smith',
-      'profile[1][email]': 'jane@example.com',
+      'profile[0].name': 'John Doe',
+      'profile[0].email': 'john@example.com',
+      'profile[1].name': 'Jane Smith',
+      'profile[1].email': 'jane@example.com',
       'ssns[0]': '123-45-6789',
       'ssns[1]': '987-65-4321',
-      'user[address][street]': '123 Main St',
-      'user[address][city]': 'Anytown',
+      'user.address.street': '123 Main St',
+      'user.address.city': 'Anytown',
     })
 
     const result = processFormData(formData)
@@ -185,12 +185,12 @@ describe('processFormData', () => {
 
   it('should handle deeply nested array objects', () => {
     const formData = createFormData({
-      'data[0][items][0][name]': 'Item 1',
-      'data[0][items][0][price]': '10.99',
-      'data[0][items][1][name]': 'Item 2',
-      'data[0][items][1][price]': '20.99',
-      'data[1][items][0][name]': 'Item 3',
-      'data[1][items][0][price]': '30.99',
+      'data[0].items[0].name': 'Item 1',
+      'data[0].items[0].price': '10.99',
+      'data[0].items[1].name': 'Item 2',
+      'data[0].items[1].price': '20.99',
+      'data[1].items[0].name': 'Item 3',
+      'data[1].items[0].price': '30.99',
     })
 
     const result = processFormData(formData)
@@ -218,13 +218,13 @@ describe('processFormData', () => {
 
   it('should handle nested arrays within objects', () => {
     const formData = createFormData({
-      'profile[0][name]': 'John Doe',
-      'profile[0][tags][0]': 'developer',
-      'profile[0][tags][1]': 'javascript',
-      'profile[1][name]': 'Jane Smith',
-      'profile[1][tags][0]': 'designer',
-      'profile[1][tags][1]': 'ui/ux',
-      'profile[1][tags][2]': 'figma',
+      'profile[0].name': 'John Doe',
+      'profile[0].tags[0]': 'developer',
+      'profile[0].tags[1]': 'javascript',
+      'profile[1].name': 'Jane Smith',
+      'profile[1].tags[0]': 'designer',
+      'profile[1].tags[1]': 'ui/ux',
+      'profile[1].tags[2]': 'figma',
     })
 
     const result = processFormData(formData)
@@ -245,12 +245,12 @@ describe('processFormData', () => {
 
   it('should handle arrays of preference objects within profiles', () => {
     const formData = createFormData({
-      'profile[0][name]': 'John Doe',
-      'profile[0][prefs][0][email]': 'daily',
-      'profile[0][prefs][1][sms]': 'weekly',
-      'profile[1][name]': 'Jane Smith',
-      'profile[1][prefs][0][email]': 'weekly',
-      'profile[1][prefs][1][sms]': 'never',
+      'profile[0].name': 'John Doe',
+      'profile[0].prefs[0].email': 'daily',
+      'profile[0].prefs[1].sms': 'weekly',
+      'profile[1].name': 'Jane Smith',
+      'profile[1].prefs[0].email': 'weekly',
+      'profile[1].prefs[1].sms': 'never',
     })
 
     const result = processFormData(formData)
@@ -272,12 +272,12 @@ describe('processFormData', () => {
   it('should handle the example form from the application', () => {
     const formData = createFormData({
       contactMethod: 'email',
-      'profile[0][name]': 'John Doe',
-      'profile[0][email]': 'john@example.com',
-      'profile[1][name]': 'Jane Smith',
-      'profile[1][email]': 'jane@example.com',
-      'profile[2][name]': '',
-      'profile[2][email]': '',
+      'profile[0].name': 'John Doe',
+      'profile[0].email': 'john@example.com',
+      'profile[1].name': 'Jane Smith',
+      'profile[1].email': 'jane@example.com',
+      'profile[2].name': '',
+      'profile[2].email': '',
       'ssns[0]': '123-45-6789',
       'ssns[1]': '987-65-4321',
       'ssns[2]': '',
@@ -296,7 +296,7 @@ describe('processFormData', () => {
   })
 
   // JSON Object Tests
-  describe('JSON Object Input', () => {
+  describe('JSON Object Tests', () => {
     it('should process simple JSON fields correctly', () => {
       const jsonData = {
         name: 'John Doe',
@@ -329,10 +329,10 @@ describe('processFormData', () => {
 
     it('should process JSON arrays of objects correctly', () => {
       const jsonData = {
-        'profile[0][name]': 'John Doe',
-        'profile[0][email]': 'john@example.com',
-        'profile[1][name]': 'Jane Smith',
-        'profile[1][email]': 'jane@example.com',
+        'profile[0].name': 'John Doe',
+        'profile[0].email': 'john@example.com',
+        'profile[1].name': 'Jane Smith',
+        'profile[1].email': 'jane@example.com',
       }
 
       const result = processFormData(jsonData)
@@ -347,12 +347,12 @@ describe('processFormData', () => {
 
     it('should process nested JSON objects correctly', () => {
       const jsonData = {
-        'user[name]': 'John Doe',
-        'user[contact][email]': 'john@example.com',
-        'user[contact][phone]': '123-456-7890',
-        'user[address][street]': '123 Main St',
-        'user[address][city]': 'Anytown',
-        'user[address][zip]': '12345',
+        'user.name': 'John Doe',
+        'user.contact.email': 'john@example.com',
+        'user.contact.phone': '123-456-7890',
+        'user.address.street': '123 Main St',
+        'user.address.city': 'Anytown',
+        'user.address.zip': '12345',
       }
 
       const result = processFormData(jsonData)
@@ -376,12 +376,12 @@ describe('processFormData', () => {
     it('should handle complex mixed JSON structures', () => {
       const jsonData = {
         name: 'my-app',
-        'profiles[0][first_name]': 'John',
-        'profiles[0][last_name]': 'Doe',
-        'profiles[0][email]': 'john.doe@example.com',
-        'profiles[0][phone]': '+1234567890',
-        'profiles[0][address][street]': '123 Main St',
-        'profiles[0][address][city]': 'Anytown',
+        'profiles[0].first_name': 'John',
+        'profiles[0].last_name': 'Doe',
+        'profiles[0].email': 'john.doe@example.com',
+        'profiles[0].phone': '+1234567890',
+        'profiles[0].address.street': '123 Main St',
+        'profiles[0].address.city': 'Anytown',
         'tags[0]': 'tag1',
         'tags[1]': 'tag2',
         'tags[2]': 'tag3',
@@ -409,13 +409,13 @@ describe('processFormData', () => {
 
     it('should handle nested arrays within JSON objects', () => {
       const jsonData = {
-        'profile[0][name]': 'John Doe',
-        'profile[0][tags][0]': 'developer',
-        'profile[0][tags][1]': 'javascript',
-        'profile[1][name]': 'Jane Smith',
-        'profile[1][tags][0]': 'designer',
-        'profile[1][tags][1]': 'ui/ux',
-        'profile[1][tags][2]': 'figma',
+        'profile[0].name': 'John Doe',
+        'profile[0].tags[0]': 'developer',
+        'profile[0].tags[1]': 'javascript',
+        'profile[1].name': 'Jane Smith',
+        'profile[1].tags[0]': 'designer',
+        'profile[1].tags[1]': 'ui/ux',
+        'profile[1].tags[2]': 'figma',
       }
 
       const result = processFormData(jsonData)
@@ -436,12 +436,12 @@ describe('processFormData', () => {
 
     it('should handle deeply nested array objects in JSON', () => {
       const jsonData = {
-        'data[0][items][0][name]': 'Item 1',
-        'data[0][items][0][price]': '10.99',
-        'data[0][items][1][name]': 'Item 2',
-        'data[0][items][1][price]': '20.99',
-        'data[1][items][0][name]': 'Item 3',
-        'data[1][items][0][price]': '30.99',
+        'data[0].items[0].name': 'Item 1',
+        'data[0].items[0].price': '10.99',
+        'data[0].items[1].name': 'Item 2',
+        'data[0].items[1].price': '20.99',
+        'data[1].items[0].name': 'Item 3',
+        'data[1].items[0].price': '30.99',
       }
 
       const result = processFormData(jsonData)
@@ -463,12 +463,12 @@ describe('processFormData', () => {
 
     it('should filter out empty values in JSON objects', () => {
       const jsonData = {
-        'profile[0][name]': 'John Doe',
-        'profile[0][email]': 'john@example.com',
-        'profile[1][name]': '',
-        'profile[1][email]': '',
-        'profile[2][name]': 'Jane Smith',
-        'profile[2][email]': 'jane@example.com',
+        'profile[0].name': 'John Doe',
+        'profile[0].email': 'john@example.com',
+        'profile[1].name': '',
+        'profile[1].email': '',
+        'profile[2].name': 'Jane Smith',
+        'profile[2].email': 'jane@example.com',
         'tags[0]': 'javascript',
         'tags[1]': '',
         'tags[2]': 'typescript',

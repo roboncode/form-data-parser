@@ -54,24 +54,24 @@ function App() {
           <div className="profile" data-profile-index="0">
             <h3>Profile 1</h3>
             <div className="input-group">
-              <input type="text" name="profile[0][name]" placeholder="Name" />
-              <input type="text" name="profile[0][email]" placeholder="Email" />
+              <input type="text" name="profile[0].name" placeholder="Name" />
+              <input type="text" name="profile[0].email" placeholder="Email" />
             </div>
           </div>
 
           <div className="profile" data-profile-index="1">
             <h3>Profile 2</h3>
             <div className="input-group">
-              <input type="text" name="profile[1][name]" placeholder="Name" />
-              <input type="text" name="profile[1][email]" placeholder="Email" />
+              <input type="text" name="profile[1].name" placeholder="Name" />
+              <input type="text" name="profile[1].email" placeholder="Email" />
             </div>
           </div>
 
           <div className="profile" data-profile-index="2">
             <h3>Profile 3</h3>
             <div className="input-group">
-              <input type="text" name="profile[2][name]" placeholder="Name" />
-              <input type="text" name="profile[2][email]" placeholder="Email" />
+              <input type="text" name="profile[2].name" placeholder="Name" />
+              <input type="text" name="profile[2].email" placeholder="Email" />
             </div>
           </div>
 
